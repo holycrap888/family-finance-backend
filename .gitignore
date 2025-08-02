@@ -1,2 +1,11 @@
 /.env*
 node_modules
+/dist
+.DS_Store
+*.log
+*.tsbuildinfo
+coverage
+*.tgz
+*.zip
+*.bak
+*.swp
