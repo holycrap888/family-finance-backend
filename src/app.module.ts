@@ -1,4 +1,3 @@
-// filepath: /home/holycrap/git/family-finance-backend/src/app.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { envValidationSchema } from './config/env.validation';
