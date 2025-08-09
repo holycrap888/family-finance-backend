@@ -1,7 +1,8 @@
-import { Controller, Post, Body } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiBody } from '@nestjs/swagger';
-import { AuthService } from './auth.service';
-import { LoginDto, RegisterDto } from '../../common/dto';
+import { RegisterDto, LoginDto } from "@/common/dto";
+import { Controller, Post, Body } from "@nestjs/common";
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiBody } from "@nestjs/swagger";
+import { AuthService } from "./auth.service";
+
 
 @ApiTags('auth')
 @ApiBearerAuth('JWT-auth')

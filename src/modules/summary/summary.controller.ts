@@ -1,8 +1,9 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
-import { SummaryService } from './summary.service';
-import { UserId } from '../../common/decorators/user-id.decorator';
+import { UserId } from "@/common/decorators/user-id.decorator";
+import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
+import { Controller, UseGuards, Get, Query } from "@nestjs/common";
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from "@nestjs/swagger";
+import { SummaryService } from "./summary.service";
+
 
 @ApiTags('summary')
 @Controller('summary')
@@ -16,5 +17,12 @@ export class SummaryController {
   @ApiQuery({ name: 'month', required: false })
   async get(@UserId() userId, @Query('month') month: string) {
     return this.summaryService.getSummary(userId, month);
+  }
+
+  @Get('chart')
+  @ApiOperation({ summary: 'Get chart data for a user and month' })
+  @ApiQuery({ name: 'month', required: false })
+  async getChart(@UserId() userId, @Query('month') month: string) {
+    return this.summaryService.getChart(userId, month);
   }
 }

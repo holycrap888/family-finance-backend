@@ -1,10 +1,10 @@
-import { Controller, Post, Body, Get, Query, UseGuards } from '@nestjs/common';
-import { UserId } from '../../common/decorators/user-id.decorator';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { ApiTags, ApiOperation, ApiBody, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
-import { ExpensesService } from './expenses.service';
-import { IExpense } from '../../interfaces/expense.interface';
-import { AddExpenseDto } from '../../common/dto';
+import { UserId } from "@/common/decorators/user-id.decorator";
+import { AddExpenseDto } from "@/common/dto";
+import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
+import { IExpense } from "@/interfaces";
+import { Controller, UseGuards, Post, Body, Get, Query } from "@nestjs/common";
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiBody, ApiQuery } from "@nestjs/swagger";
+import { ExpensesService } from "./expenses.service";
 
 // Type for single or array expense request body
 type ExpenseBody = Omit<IExpense, '_id' | 'userId' | 'createdAt'> & { userId: string };
@@ -16,8 +16,6 @@ type ExpenseRequest = ExpenseBody | ExpenseBody[];
 @UseGuards(JwtAuthGuard)
 export class ExpensesController {
   constructor(private readonly expensesService: ExpensesService) {}
-
-  // Type for single or array expense request body
 
   @Post()
   @ApiOperation({ summary: 'Add expense(s)' })

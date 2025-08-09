@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
-import { MongoService } from 'src/core/database/mongo.service';
-import { IUser } from 'src/interfaces/user.interface';
-import { ObjectId } from 'mongodb';
-import { MONGO_COLLECTIONS } from 'src/config/mongo.config';
+import { Injectable } from "@nestjs/common";
+import { ObjectId } from "mongodb";
+import { MONGO_COLLECTIONS } from "@/config/mongo.config";
+import { MongoService } from "@/core/database";
+import { IUser } from "@/interfaces";
+
 
 @Injectable()
 export class UsersService {

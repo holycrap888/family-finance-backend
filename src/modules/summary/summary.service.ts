@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
-import { MongoService } from 'src/core/database/mongo.service';
-import { ObjectId } from 'mongodb';
-import { MONGO_COLLECTIONS } from 'src/config/mongo.config';
-import { toPercent } from '../../common/utils';
-import { UsersService } from '../users';
+import { getStartDateEndDate, toPercent } from "@/common/utils";
+import { MONGO_COLLECTIONS } from "@/config/mongo.config";
+import { MongoService } from "@/core/database";
+import { Injectable } from "@nestjs/common";
+import { ObjectId } from "mongodb";
+import { UsersService } from "../users";
+
 
 @Injectable()
 export class SummaryService {
@@ -13,15 +14,11 @@ export class SummaryService {
   ) { }
 
   async getSummary(userId: string, month?: string) {
-    let start: Date = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const { start, end } = getStartDateEndDate(month);
     const user = await this.usersService.findById(userId);
     if (!user) throw new Error('User not found');
 
     const expenses = this.mongo.getCollection(MONGO_COLLECTIONS.EXPENSES);
-    if (month)
-      start = new Date(`${month}-01T00:00:00.000Z`);
-    const end = new Date(start);
-    end.setMonth(start.getMonth() + 1);
 
     const cursor = await expenses.aggregate([
       {
@@ -69,5 +66,41 @@ export class SummaryService {
         wantsBalance: getBudgetAmount('wants') - sumCategories(['entertainment', 'shopping']),
       }
     };
+  }
+
+  async getChart(userId: string, month?: string) {
+    const { start, end } = getStartDateEndDate(month);
+    const expenses = this.mongo.getCollection(MONGO_COLLECTIONS.EXPENSES);
+    const cahrtData = expenses.aggregate([
+      {
+        $match: {
+          userId: new ObjectId(userId),
+          date: { $gte: start, $lt: end }
+        },
+      },
+      {
+        $group: {
+          _id: { $dayOfMonth: '$date' },
+          total: { $sum: '$amount' }
+        }
+      },
+      {
+        $sort: { _id: 1 } // Sort by day of month
+      }
+    ]).toArray();
+    const chart = await cahrtData;
+    const chartMap = new Map<number, number>();
+    chart.forEach(item => {
+      chartMap.set(item._id, item.total);
+    }
+    );
+    const result: { day: number, total: number }[] = [];
+    for (let i = 1; i <= 31; i++) {
+      result.push({
+        day: i,
+        total: chartMap.get(i) || 0
+      });
+    }
+    return result;
   }
 }

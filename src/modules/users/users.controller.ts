@@ -1,10 +1,11 @@
-import { Controller, Get, Param, Put, Body, NotFoundException, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { ApiTags, ApiOperation, ApiParam, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
-import { UsersService } from './users.service';
-import { IUser } from '../../interfaces/user.interface';
-import { UpdateSettingsDto } from '../../common/dto';
-import { UserId } from '../../common/decorators/user-id.decorator';
+import { UserId } from "@/common/decorators/user-id.decorator";
+import { UpdateSettingsDto } from "@/common/dto";
+import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
+import { IUser } from "@/interfaces";
+import { Controller, UseGuards, Get, NotFoundException, Param, Put, Body } from "@nestjs/common";
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam, ApiBody } from "@nestjs/swagger";
+import { UsersService } from "./users.service";
+
 
 @ApiTags('users')
 @Controller('users')

@@ -1,8 +1,10 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { MongoService } from 'src/core/database/mongo.service';
-import { IExpense } from 'src/interfaces/expense.interface';
-import { ObjectId } from 'mongodb';
-import { MONGO_COLLECTIONS } from 'src/config/mongo.config';
+import { getStartDateEndDate } from "@/common/utils";
+import { MONGO_COLLECTIONS } from "@/config/mongo.config";
+import { MongoService } from "@/core/database";
+import { IExpense } from "@/interfaces";
+import { Injectable, BadRequestException } from "@nestjs/common";
+import { ObjectId } from "mongodb";
+
 
 @Injectable()
 export class ExpensesService {
@@ -50,13 +52,9 @@ export class ExpensesService {
   }
 
   async getExpenses(userId: string, month?: string) {
-    let start: Date = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const { start, end } = getStartDateEndDate(month);
+    
     const collection = this.mongo.getCollection<IExpense>(MONGO_COLLECTIONS.EXPENSES);
-    if (month)
-      start = new Date(`${month}-01T00:00:00.000Z`);
-    const end = new Date(start);
-    end.setMonth(start.getMonth() + 1);
-
     return await collection.find({
       userId: new ObjectId(userId),
       createdAt: { $gte: start, $lt: end }
