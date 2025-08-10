@@ -14,14 +14,14 @@ export class SummaryController {
 
   @Get()
   @ApiOperation({ summary: 'Get summary for a user and month' })
-  @ApiQuery({ name: 'month', required: false })
+  @ApiQuery({ name: 'month', required: false, description: 'Month in YYYY-MM format' })
   async get(@UserId() userId, @Query('month') month: string) {
     return this.summaryService.getSummary(userId, month);
   }
 
   @Get('chart')
   @ApiOperation({ summary: 'Get chart data for a user and month' })
-  @ApiQuery({ name: 'month', required: false })
+  @ApiQuery({ name: 'month', required: false, description: 'Month in YYYY-MM format' })
   async getChart(@UserId() userId, @Query('month') month: string) {
     return this.summaryService.getChart(userId, month);
   }

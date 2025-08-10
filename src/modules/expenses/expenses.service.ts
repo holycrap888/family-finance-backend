@@ -3,24 +3,24 @@ import { MONGO_COLLECTIONS } from "@/config/mongo.config";
 import { MongoService } from "@/core/database";
 import { IExpense } from "@/interfaces";
 import { Injectable, BadRequestException } from "@nestjs/common";
-import { ObjectId } from "mongodb";
+import { ObjectId, WithId } from "mongodb";
 
 
 @Injectable()
 export class ExpensesService {
   private readonly validCategories = new Set([
-      'emergency',
-      'food',
-      'shopping',
-      'transport',
-      'bills',
-      'entertainment',
-      'investments',
-      'others'
-    ]);
+    'emergency',
+    'food',
+    'shopping',
+    'transport',
+    'bills',
+    'entertainment',
+    'investments',
+    'others'
+  ]);
   constructor(private readonly mongo: MongoService) { }
 
-  async addExpense(userId: string, dto: Omit<IExpense, '_id' | 'userId' | 'createdAt'>) {
+  async addExpense(userId: string, dto: Omit<IExpense, '_id' | 'userId' | 'createdAt'>): Promise<{ message: string }> {
     if (!this.validCategories.has(dto?.category)) {
       throw new BadRequestException(`Invalid expense category: ${dto.category}`);
     }
@@ -34,10 +34,10 @@ export class ExpensesService {
     return { message: 'Expense added successfully' };
   }
 
-  async addExpenses(userId: string, dtos: Array<Omit<IExpense, '_id' | 'userId' | 'createdAt'>>) {
+  async addExpenses(userId: string, dtos: Array<Omit<IExpense, '_id' | 'userId' | 'createdAt'>>): Promise<{ message: string }> {
     for (const dto of dtos) {
       if (!this.validCategories.has(dto?.category)) {
-      throw new BadRequestException(`Invalid expense category: ${dto.category}`);
+        throw new BadRequestException(`Invalid expense category: ${dto.category}`);
       }
     }
     const collection = this.mongo.getCollection<IExpense>(MONGO_COLLECTIONS.EXPENSES);
@@ -51,9 +51,9 @@ export class ExpensesService {
     return { message: `${docs.length} expenses added successfully` };
   }
 
-  async getExpenses(userId: string, month?: string) {
+  async getExpenses(userId: string, month?: string): Promise<WithId<IExpense>[]> {
     const { start, end } = getStartDateEndDate(month);
-    
+
     const collection = this.mongo.getCollection<IExpense>(MONGO_COLLECTIONS.EXPENSES);
     return await collection.find({
       userId: new ObjectId(userId),

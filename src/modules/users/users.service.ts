@@ -13,7 +13,7 @@ export class UsersService {
     return this.mongo.getCollection<IUser>(MONGO_COLLECTIONS.USERS);
   }
 
-  async createUser(user: Omit<IUser, '_id' | 'createdAt' | 'updatedAt'>) {
+  async createUser(user: Omit<IUser, '_id' | 'createdAt' | 'updatedAt'>): Promise<void> {
     const now = new Date();
     await this.collection.insertOne({
       ...user,
@@ -30,7 +30,7 @@ export class UsersService {
     return this.collection.findOne({ _id: new ObjectId(id) });
   }
 
-  async updateSettings(userId: string, settings: IUser['settings']) {
+  async updateSettings(userId: string, settings: IUser['settings']): Promise<void> {
     await this.collection.updateOne(
       { _id: new ObjectId(userId) },
       { $set: { settings, updatedAt: new Date() } },

@@ -4,6 +4,7 @@ import { MongoService } from "@/core/database";
 import { Injectable } from "@nestjs/common";
 import { ObjectId } from "mongodb";
 import { UsersService } from "../users";
+import { ISummary, ISummaryChart } from "@/interfaces";
 
 
 @Injectable()
@@ -13,14 +14,15 @@ export class SummaryService {
     private readonly usersService: UsersService
   ) { }
 
-  async getSummary(userId: string, month?: string) {
+  async getSummary(userId: string, month?: string): Promise<ISummary> {
     const { start, end } = getStartDateEndDate(month);
+
     const user = await this.usersService.findById(userId);
     if (!user) throw new Error('User not found');
 
     const expenses = this.mongo.getCollection(MONGO_COLLECTIONS.EXPENSES);
 
-    const cursor = await expenses.aggregate([
+    const expenseData = await expenses.aggregate([
       {
         $match: {
           userId: new ObjectId(userId),
@@ -35,43 +37,78 @@ export class SummaryService {
       }
     ]).toArray();
 
-    const totalSpent = cursor.reduce((acc, cur) => acc + cur.total, 0);
+    const categoryTotals = Object.fromEntries(
+      expenseData.map(({ _id, total }) => [_id, total])
+    );
+    const totalSpent = expenseData.reduce((sum, { total }) => sum + total, 0);
 
-    // Create a map for quick category lookup
-    const categoryTotals = cursor.reduce<Record<string, number>>((acc, cur) => {
-      acc[cur._id] = cur.total;
-      return acc;
-    }, {});
-
-    const getBudgetAmount = (type: keyof typeof user.settings.budgetRatio) =>
-      user.salary * (user.settings.budgetRatio[type] / 100);
+    const { budgetRatio } = user.settings;
+    const getBudgetAmount = (type: keyof typeof budgetRatio) =>
+      user.salary * (budgetRatio[type] / 100);
 
     const sumCategories = (categories: string[]) =>
       categories.reduce((sum, cat) => sum + (categoryTotals[cat] || 0), 0);
+
+    const balances = [
+      {
+        key: 'needsBalance',
+        categories: ['bills', 'transport', 'food'],
+        type: 'needs'
+      },
+      {
+        key: 'wantsBalance',
+        categories: ['entertainment', 'shopping', 'others'],
+        type: 'wants'
+      },
+      {
+        key: 'savingsBalance',
+        categories: ['savings'],
+        type: 'savings'
+      },
+      {
+        key: 'investmentsBalance',
+        categories: ['investments'],
+        type: 'investments'
+      },
+      {
+        key: 'emergencyBalance',
+        categories: ['emergency'],
+        type: 'emergency'
+      }
+    ];
+
+    const actualBalances = balances.reduce((acc, { key, categories, type }) => {
+      const actual = sumCategories(categories);
+      acc[key] = {
+        recommended: getBudgetAmount(type as keyof typeof budgetRatio),
+        actual,
+        difference: getBudgetAmount(type as keyof typeof budgetRatio) - actual
+      };
+      return acc;
+    }, {} as Record<string, { recommended: number, actual: number, difference: number }>);
 
     return {
       month,
       salary: user.salary,
       totalBalance: user.salary - totalSpent,
       budgetRatio: Object.fromEntries(
-        Object.entries(user.settings.budgetRatio).map(([k, v]) => [k, toPercent(v)])
+        Object.entries(budgetRatio).map(([k, v]) => [k, toPercent(v)])
       ),
       recommended: Object.fromEntries(
-        Object.entries(user.settings.budgetRatio).map(([k, v]) => [k, user.salary * (v / 100)])
+        Object.entries(budgetRatio).map(([k, v]) => [k, user.salary * (v / 100)])
       ),
       actual: {
         totalSpent,
         byCategory: categoryTotals,
-        needsBalance: getBudgetAmount('needs') - sumCategories(['transport', 'bills', 'food']),
-        wantsBalance: getBudgetAmount('wants') - sumCategories(['entertainment', 'shopping']),
+        ...actualBalances,
       }
     };
   }
 
-  async getChart(userId: string, month?: string) {
+  async getChart(userId: string, month?: string): Promise<ISummaryChart[]> {
     const { start, end } = getStartDateEndDate(month);
     const expenses = this.mongo.getCollection(MONGO_COLLECTIONS.EXPENSES);
-    const cahrtData = expenses.aggregate([
+    const chartData = await expenses.aggregate([
       {
         $match: {
           userId: new ObjectId(userId),
@@ -85,17 +122,18 @@ export class SummaryService {
         }
       },
       {
-        $sort: { _id: 1 } // Sort by day of month
+        $sort: { "_id": 1 }
       }
     ]).toArray();
-    const chart = await cahrtData;
+
     const chartMap = new Map<number, number>();
-    chart.forEach(item => {
+    chartData.forEach(item => {
       chartMap.set(item._id, item.total);
-    }
-    );
+    });
+
+    const daysInMonth = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
     const result: { day: number, total: number }[] = [];
-    for (let i = 1; i <= 31; i++) {
+    for (let i = 1; i <= daysInMonth; i++) {
       result.push({
         day: i,
         total: chartMap.get(i) || 0
